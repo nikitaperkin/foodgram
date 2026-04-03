@@ -1,8 +1,6 @@
-"""Фильтры для API."""
-
 from django_filters import rest_framework as django_filters
 
-from recipes.models import Recipe, Tag, Ingredient
+from recipes.models import Ingredient, Recipe, Tag
 
 
 class RecipeFilter(django_filters.FilterSet):
@@ -38,8 +36,9 @@ class RecipeFilter(django_filters.FilterSet):
 
 class IngredientFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(
-        field_name='name', lookup_expr='istartswith')
-    
+        field_name='name', lookup_expr='istartswith'
+    )
+
     class Meta:
         model = Ingredient
         fields = ('name', )

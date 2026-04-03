@@ -1,21 +1,22 @@
-from django.shortcuts import get_object_or_404
 from django.db.models import Sum
 from django.http import HttpResponse
-from rest_framework import filters, permissions, viewsets, status
-from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from djoser.views import UserViewSet as DjoserUserViewSet
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
+from users.models import Subscription, User
 from .filters import IngredientFilter, RecipeFilter
-from recipes.models import Ingredient, Tag, Recipe, Favorite, ShoppingCart, RecipeIngredient
-from .serializers import (IngredientSerializer, TagSerializer,
-                          RecipeReadSerializer, RecipeWriteSerializer,
-                          RecipeShortSerializer, SubscriptionSerializer,
-                          AvatarSerializer)
 from .permissions import IsAuthorOrReadOnly
-from users.models import User, Subscription
+from .serializers import (AvatarSerializer, IngredientSerializer,
+                          RecipeReadSerializer, RecipeShortSerializer,
+                          RecipeWriteSerializer, SubscriptionSerializer,
+                          TagSerializer)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -48,7 +49,9 @@ class UserViewSet(DjoserUserViewSet):
                     {'error': 'Нельзя подписаться на себя'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            if Subscription.objects.filter(user=user, following=author).exists():
+            if Subscription.objects.filter(
+                user=user, following=author
+            ).exists():
                 return Response(
                     {'error': 'Уже подписан'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -57,6 +60,7 @@ class UserViewSet(DjoserUserViewSet):
             serializer = SubscriptionSerializer(
                 author, context={'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         subscription = Subscription.objects.filter(user=user, following=author)
         if not subscription.exists():
             return Response(
@@ -107,6 +111,7 @@ class UserViewSet(DjoserUserViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+
         if not user.avatar:
             return Response(
                 {'error': 'Аватар отсутствует'},
@@ -139,19 +144,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .prefetch_related('tags', 'recipe_ingredients__ingredient')
         )
 
-    def _add_or_remove(self, request, model, serializer_class, error_add, error_remove, pk=None):
+    def _add_or_remove(
+        self, request, model, serializer_class,
+        error_add, error_remove, pk=None
+    ):
         user = request.user
         recipe = get_object_or_404(Recipe, pk=pk)
         if request.method == 'POST':
             if model.objects.filter(user=user, recipe=recipe).exists():
-                return Response({'error': error_add},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': error_add}, status=status.HTTP_400_BAD_REQUEST
+                )
             model.objects.create(user=user, recipe=recipe)
-            serializer = serializer_class(recipe, context={'request': request})
+            serializer = serializer_class(
+                recipe, context={'request': request}
+            )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         obj = model.objects.filter(user=user, recipe=recipe)
         if not obj.exists():
-            return Response({'error': error_remove}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': error_remove}, status=status.HTTP_400_BAD_REQUEST
+            )
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -159,7 +173,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         permission_classes=[IsAuthenticated],
-    )    
+    )
     def favorite(self, request, pk=None):
         return self._add_or_remove(
             request=request,
@@ -211,7 +225,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
         response = HttpResponse(content_type='text/plain; charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename="shopping_cart.txt"'
+        response['Content-Disposition'] = (
+            'attachment; filename="shopping_cart.txt"'
+        )
 
         if not ingredients.exists():
             response.write('Ваша корзина пуста.')

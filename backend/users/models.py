@@ -12,10 +12,14 @@ class User(AbstractUser):
         verbose_name='Фото профиля',
         upload_to='users/images/',
         null=True,
-        default=None   
+        default=None
     )
-    first_name = models.CharField(verbose_name='Имя', max_length=150, blank=False)
-    last_name = models.CharField(verbose_name='Фамилия', max_length=150, blank=False)
+    first_name = models.CharField(
+        verbose_name='Имя', max_length=150, blank=False
+    )
+    last_name = models.CharField(
+        verbose_name='Фамилия', max_length=150, blank=False
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']

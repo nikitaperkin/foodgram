@@ -34,8 +34,12 @@ class Recipe(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=32, unique=True, verbose_name='Название')
-    slug = models.SlugField(max_length=32, unique=True, verbose_name='Slug (идентификатор)')
+    name = models.CharField(
+        max_length=32, unique=True, verbose_name='Название'
+    )
+    slug = models.SlugField(
+        max_length=32, unique=True, verbose_name='Slug (идентификатор)'
+    )
 
     class Meta:
         verbose_name = 'Тег'
@@ -55,7 +59,10 @@ class Ingredient(models.Model):
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, verbose_name='Рецепт', related_name='recipe_ingredients'
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепт',
+        related_name='recipe_ingredients'
     )
     ingredient = models.ForeignKey(
         Ingredient, on_delete=models.CASCADE, verbose_name='Ингредиент'

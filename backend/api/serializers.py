@@ -1,8 +1,9 @@
-from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
 
-from recipes.models import Tag, RecipeIngredient, Recipe, Favorite, ShoppingCart, Ingredient
-from users.models import User, Subscription
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
+from users.models import Subscription, User
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -15,7 +16,9 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeIngredientReadSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
+    )
 
     class Meta:
         model = RecipeIngredient
@@ -58,7 +61,9 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or request.user.is_anonymous:
             return False
-        return Subscription.objects.filter(following=obj, user=request.user).exists()
+        return Subscription.objects.filter(
+            following=obj, user=request.user
+        ).exists()
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -88,7 +93,7 @@ class SubscriptionSerializer(UserSerializer):
     def get_recipes(self, obj):
         request = self.context.get('request')
         limit = request.query_params.get('recipes_limit')
-        recipes = obj.recipes.all()          # ← только рецепты этого автора
+        recipes = obj.recipes.all()
         if limit:
             recipes = recipes[:int(limit)]
         return RecipeShortSerializer(
@@ -127,13 +132,17 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or request.user.is_anonymous:
             return False
-        return Favorite.objects.filter(recipe=obj, user=request.user).exists()
+        return Favorite.objects.filter(
+            recipe=obj, user=request.user
+        ).exists()
 
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
         if not request or request.user.is_anonymous:
             return False
-        return ShoppingCart.objects.filter(recipe=obj, user=request.user).exists()
+        return ShoppingCart.objects.filter(
+            recipe=obj, user=request.user
+        ).exists()
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -159,7 +168,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Нужен хотя бы один ингредиент')
         ingredient_ids = [item['id'] for item in ingredients]
         if len(ingredient_ids) != len(set(ingredient_ids)):
-            raise serializers.ValidationError('Ингредиенты не должны повторяться')
+            raise serializers.ValidationError(
+                'Ингредиенты не должны повторяться'
+            )
 
         tags = data.get('tags')
         if not tags:
