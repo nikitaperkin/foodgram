@@ -8,13 +8,15 @@ volumes:
 services:
   db:
     image: postgres:13
+    restart: always
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
 
   backend:
     container_name: foodgram-back
-    build: ../backend/
+    image: ultraanten/foodgram_back
+    restart: always
     env_file: .env
     depends_on:
       - db
@@ -24,7 +26,7 @@ services:
 
   frontend:
     container_name: foodgram-front
-    build: ../frontend
+    image: ultraanten/foodgram_front
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static
