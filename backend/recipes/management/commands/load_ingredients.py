@@ -12,7 +12,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         data_path = os.path.join(
-            settings.BASE_DIR.parent, 'data', 'ingredients.json'
+            settings.BASE_DIR, 'data', 'ingredients.json'
         )
 
         if not os.path.exists(data_path):
