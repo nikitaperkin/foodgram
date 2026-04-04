@@ -9,16 +9,16 @@ class User(AbstractUser):
         unique=True,
     )
     avatar = models.ImageField(
-        verbose_name='Фото профиля',
+        verbose_name='Avatar',
         upload_to='users/images/',
         null=True,
         default=None
     )
     first_name = models.CharField(
-        verbose_name='Имя', max_length=150, blank=False
+        verbose_name='Name', max_length=150, blank=False
     )
     last_name = models.CharField(
-        verbose_name='Фамилия', max_length=150, blank=False
+        verbose_name='Surname', max_length=150, blank=False
     )
 
     USERNAME_FIELD = 'email'
