@@ -9,9 +9,6 @@ from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
-from recipes.models import (Favorite, Ingredient, Recipe,
-                            ShoppingCart, Subscription, Tag, User)
-
 from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (AvatarSerializer, IngredientSerializer,
@@ -19,6 +16,8 @@ from .serializers import (AvatarSerializer, IngredientSerializer,
                           RecipeWriteSerializer, UserRecipesSerializer,
                           TagSerializer)
 from .services import build_shopping_cart
+from recipes.models import (Favorite, Ingredient, Recipe,
+                            ShoppingCart, Subscription, Tag, User)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
