@@ -16,31 +16,22 @@
 
 **API документация:** https://forkfeed.hopto.org/api/docs/
 
-**Панель администратора:** https://forkfeed.hopto.org/admin/
-
-**Данные для входа в админку:**
-- Email: `admin@foodgram.ru`
-- Пароль: `adminpassword`
+**Панель администратора:** [https://forkfeed.hopto.org/admin/](https://forkfeed.hopto.org/admin/)
 
 ***
 
 ## Запуск проекта на сервере
 
-### 1. Установить Docker на сервере
+На сервере должен быть установлен [Docker](https://docs.docker.com/engine/install/).
+
+### 1. Скопировать конфигурационные файлы на сервер
 
 ```bash
-sudo apt update
-sudo apt install docker.io docker-compose-plugin -y
+git clone git@github.com:nikitaperkin/foodgram.git
+cd foodgram
 ```
 
-### 2. Скопировать конфигурационные файлы на сервер
-
-```bash
-scp infra/docker-compose.production.yml <user>@<server_ip>:~/foodgram/docker-compose.production.yml
-scp infra/nginx.conf <user>@<server_ip>:~/foodgram/nginx.conf
-```
-
-### 3. Добавить секреты в GitHub Actions
+### 2. Добавить секреты в GitHub Actions
 
 В настройках репозитория (`Settings → Secrets → Actions`) добавить следующие переменные:
 
@@ -68,28 +59,36 @@ DB_HOST=db
 DB_PORT=5432
 ```
 
-### 4. Запустить CI/CD
+### 3. Запустить контейнеры на сервере
+
+Создать файл `.env` на сервере и заполнить его по образцу выше:
 
 ```bash
-git add .
-git commit -m "Deploy"
-git push
+touch ~/foodgram/.env
 ```
 
-После пуша автоматически запустятся процессы workflow:
+Перейти в папку проекта и запустить контейнеры:
 
-- проверка кода линтером `flake8` и `flake8-isort`
-- сборка Docker-образов и публикация на DockerHub
-- деплой на удалённый сервер (миграции, загрузка ингредиентов, сборка статики)
-- уведомление в Telegram об успешном завершении деплоя
+```bash
+cd ~/foodgram
+sudo docker compose -f docker-compose.production.yml pull
+sudo docker compose -f docker-compose.production.yml up -d
+```
 
-### 5. Создать суперпользователя и теги (один раз)
+Выполнить миграции, загрузить данные и собрать статику:
+
+```bash
+sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+sudo docker compose -f docker-compose.production.yml exec backend python manage.py load_ingredients
+sudo docker compose -f docker-compose.production.yml exec backend python manage.py load_tags
+sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
+```
+
+### 4. Создать суперпользователя
 
 ```bash
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py createsuperuser
 ```
-
-Теги добавляются через админ-панель: `https://<ваш_домен>/admin/`
 
 ***
 
@@ -119,6 +118,7 @@ docker compose -f infra/docker-compose.yml up -d
 ```bash
 docker compose -f infra/docker-compose.yml exec backend python manage.py migrate
 docker compose -f infra/docker-compose.yml exec backend python manage.py load_ingredients
+docker compose -f infra/docker-compose.yml exec backend python manage.py load_tags
 docker compose -f infra/docker-compose.yml exec backend python manage.py collectstatic --noinput
 ```
 
@@ -128,7 +128,7 @@ docker compose -f infra/docker-compose.yml exec backend python manage.py collect
 docker compose -f infra/docker-compose.yml exec backend python manage.py createsuperuser
 ```
 
-Проект доступен по адресу: `http://localhost/`
+Проект доступен по адресу: [http://localhost/](http://localhost/)
 
 ***
 
@@ -164,6 +164,8 @@ pip install -r requirements.txt
 
 ```bash
 python manage.py migrate
+python manage.py load_ingredients
+python manage.py load_tags
 python manage.py runserver
 ```
 
@@ -208,4 +210,4 @@ python manage.py runserver
 
 ## Автор
 
-**Никита Перкин** — [GitHub](https://github.com/nikitaperkin)
+**Никита Перкин** — [GitHub](https://github.com/nikitaperkin) | [Telegram](https://t.me/username_uu)
