@@ -73,7 +73,7 @@ class FoodgramUserAdmin(UserAdmin):
         if not user.avatar:
             return '—'
         return (f'<img src="{user.avatar.url}" width="50" '
-                f'height="50" style="border-radius:50%">')
+                f'height="50" style="border-radius: 50%">')
 
     @admin.display(description='Рецептов')
     def recipes_count(self, user):
@@ -136,7 +136,7 @@ class RecipeAdmin(admin.ModelAdmin):
         if not recipe.image:
             return '—'
         return (f'<img src="{recipe.image.url}" width="60" '
-                f'height="60" style="object-fit:cover;">')
+                f'height="60" style="object-fit: cover">')
 
 
 @admin.register(Tag)
