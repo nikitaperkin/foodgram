@@ -204,7 +204,7 @@ python manage.py runserver
 - **База данных:** PostgreSQL 16
 - **Фронтенд:** React, SPA (Single Page Application)
 - **Инфраструктура:** Docker, Nginx, Gunicorn
-- **CI/CD:** GitHub Actions
+- **CI/CD:** GitHub Actions (автоматический деплой при пуше в main)
 
 ***
 
