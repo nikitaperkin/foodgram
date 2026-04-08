@@ -1,7 +1,7 @@
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
-from django_filters.rest_framework import DjangoFilterBackend
 from django.urls import reverse
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
@@ -11,7 +11,6 @@ from rest_framework.response import Response
 
 from recipes.models import (Favorite, Ingredient, Recipe,
                             ShoppingCart, Subscription, Tag, User)
-
 from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (AvatarSerializer, IngredientSerializer,

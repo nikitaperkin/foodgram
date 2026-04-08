@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.html import mark_safe
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                     ShoppingCart, Subscription, User, Tag)
+                     ShoppingCart, Subscription, Tag, User)
 
 
 class HasRelatedFilter(admin.SimpleListFilter):
