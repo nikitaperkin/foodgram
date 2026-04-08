@@ -2,7 +2,6 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-
 MIN_COOKING_TIME = 1
 MIN_AMOUNT = 1
 
