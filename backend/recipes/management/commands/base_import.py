@@ -19,10 +19,10 @@ class BaseImportCommand(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS(
                     f'{data_path.name}: '
-                    f'{len(created)} новых записей успешно загружено'
+                    f' успешно загружено записей — {len(created)}'
                 )
             )
-        except FileNotFoundError:
-            self.stderr.write(self.style.ERROR(f'Файл не найден: {data_path}'))
-        except (json.JSONDecodeError, KeyError) as e:
-            self.stderr.write(self.style.ERROR(f'Ошибка в файле: {e}'))
+        except Exception as e:
+            self.stderr.write(
+                self.style.ERROR(f'{data_path.name}: ошибка — {e}')
+            )

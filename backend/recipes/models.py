@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
@@ -13,7 +14,7 @@ class User(AbstractUser):
         unique=True,
         validators=[
             RegexValidator(
-                regex=r'^[\w.@+-]+$',
+                regex=settings.USERNAME_REGEX,
                 message='Допустимы только буквы, цифры и символы @.+-_'
             )
         ],
@@ -191,7 +192,7 @@ class RecipeIngredient(models.Model):
 
 class Favorite(UserRecipeBase):
     class Meta(UserRecipeBase.Meta):
-        verbose_name = 'Избранное'
+        verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
 
 

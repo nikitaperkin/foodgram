@@ -139,3 +139,5 @@ DJOSER = {
         'current_user': 'api.serializers.UserSerializer',
     }
 }
+
+USERNAME_REGEX = r'^[\w.@+-]+$'

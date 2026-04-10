@@ -12,9 +12,9 @@
 
 ## Проект доступен по адресу
 
-**Сайт:** https://forkfeed.hopto.org
+**Сайт:** [https://forkfeed.hopto.org/](https://forkfeed.hopto.org/)
 
-**API документация:** https://forkfeed.hopto.org/api/docs/
+**API документация:** [https://forkfeed.hopto.org/api/docs/](https://forkfeed.hopto.org/api/docs/)
 
 **Панель администратора:** [https://forkfeed.hopto.org/admin/](https://forkfeed.hopto.org/admin/)
 
@@ -71,14 +71,12 @@ touch ~/foodgram/.env
 
 ```bash
 cd ~/foodgram
-sudo docker compose -f docker-compose.production.yml pull
 sudo docker compose -f docker-compose.production.yml up -d
 ```
 
 Выполнить миграции, загрузить данные и собрать статику:
 
 ```bash
-sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py load_ingredients
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py load_tags
 sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
@@ -116,7 +114,6 @@ docker compose -f infra/docker-compose.yml up -d
 Выполнить миграции и загрузить данные:
 
 ```bash
-docker compose -f infra/docker-compose.yml exec backend python manage.py migrate
 docker compose -f infra/docker-compose.yml exec backend python manage.py load_ingredients
 docker compose -f infra/docker-compose.yml exec backend python manage.py load_tags
 docker compose -f infra/docker-compose.yml exec backend python manage.py collectstatic --noinput
@@ -163,7 +160,6 @@ pip install -r requirements.txt
 Выполнить миграции и запустить сервер:
 
 ```bash
-python manage.py migrate
 python manage.py load_ingredients
 python manage.py load_tags
 python manage.py runserver

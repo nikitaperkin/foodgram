@@ -1,5 +1,5 @@
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -14,7 +14,7 @@ from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (AvatarSerializer, IngredientSerializer,
                           RecipeReadSerializer, RecipeShortSerializer,
-                          RecipeWriteSerializer, UserRecipesSerializer,
+                          RecipeWriteSerializer, UserWithRecipesSerializer,
                           TagSerializer)
 from .services import build_shopping_cart
 from recipes.models import (Favorite, Ingredient, Recipe,
@@ -63,10 +63,12 @@ class UserViewSet(DjoserUserViewSet):
                                                         following=author)
         if not created:
             raise serializers.ValidationError(
-                f'Уже подписан на {author.username}'
+                f'Уже есть подписка на {author.username}'
             )
         return Response(
-            UserRecipesSerializer(author, context={'request': request}).data,
+            UserWithRecipesSerializer(
+                author, context={'request': request}
+            ).data,
             status=status.HTTP_201_CREATED
         )
 
@@ -76,11 +78,15 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
-        authors = User.objects.filter(author_subscriptions__user=request.user)
-        page = self.paginate_queryset(authors)
         return self.get_paginated_response(
-            UserRecipesSerializer(
-                page, many=True, context={'request': request}
+            UserWithRecipesSerializer(
+                self.paginate_queryset(
+                    User.objects.filter(
+                        author_subscriptions__user=request.user
+                    )
+                ),
+                many=True,
+                context={'request': request}
             ).data
         )
 
@@ -112,7 +118,11 @@ class UserViewSet(DjoserUserViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
+    queryset = (
+        Recipe.objects
+        .select_related('author')
+        .prefetch_related('tags', 'recipe_ingredients__ingredient')
+    )
     permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly, )
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
@@ -126,12 +136,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeWriteSerializer
         return RecipeReadSerializer
 
-    def get_queryset(self):
-        return (
-            Recipe.objects.select_related('author')
-            .prefetch_related('tags', 'recipe_ingredients__ingredient')
-        )
-
     def _add_or_remove_recipe(self, request, model, pk=None):
         user = request.user
         if request.method == 'DELETE':
@@ -142,7 +146,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         _, created = model.objects.get_or_create(user=user, recipe=recipe)
         if not created:
             raise serializers.ValidationError(
-                'Рецепт уже добавлен в избранное'
+                f'Рецепт «{recipe.name}» уже добавлен'
             )
         return Response(
             RecipeShortSerializer(
@@ -182,16 +186,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_link(self, request, pk=None):
         if not Recipe.objects.filter(pk=pk).exists():
-            raise Http404
+            raise Http404(f'Рецепт id={pk} не найден')
         return Response(
             {'short-link': request.build_absolute_uri(
-                reverse('recipe-short-link', kwargs={'pk': pk})
+                reverse('recipe-short-link', args=[pk])
             )}
         )
-
-    @staticmethod
-    def redirect_to_recipe(request, pk):
-        return redirect(f'/recipes/{pk}/')
 
     @action(
         detail=False,

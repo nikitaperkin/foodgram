@@ -23,6 +23,11 @@ services:
     volumes:
       - static:/backend_static
       - media:/app/media
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --no-input &&
+             cp -r /app/collected_static/. /backend_static/static &&
+             gunicorn foodgram_backend.wsgi --bind 0.0.0.0:8000"
 
   frontend:
     container_name: foodgram-front

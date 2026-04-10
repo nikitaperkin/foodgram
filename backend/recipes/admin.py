@@ -6,11 +6,51 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Subscription, Tag, User)
 
 
-class HasRelatedFilter(admin.SimpleListFilter):
-    related_name = None
+class CookingTimeFilter(admin.SimpleListFilter):
+    title = 'Время готовки'
+    parameter_name = 'cooking_time'
+
+    def _get_thresholds(self):
+        times = sorted(
+            Recipe.objects.values_list('cooking_time', flat=True)
+        )
+        if not times:
+            return 30, 60
+        n = len(times)
+        return times[n // 3], times[2 * n // 3]
 
     def lookups(self, request, model_admin):
-        return [('yes', 'Да'), ('no', 'Нет')]
+        t1, t2 = self._get_thresholds()
+        queryset = model_admin.get_queryset(request)
+        fast_count = queryset.filter(cooking_time__lt=t1).count()
+        medium_count = queryset.filter(
+            cooking_time__gte=t1, cooking_time__lt=t2
+        ).count()
+        slow = queryset.filter(
+            cooking_time__gte=t2
+        ).count()
+        return [
+            ('fast', f'быстрее {t1} мин ({fast_count})'),
+            ('medium', f'быстрее {t2} мин ({medium_count})'),
+            ('slow', f'долго ({slow})'),
+        ]
+
+    def queryset(self, request, queryset):
+        t1, t2 = self._get_thresholds()
+        if self.value() == 'fast':
+            return queryset.filter(cooking_time__lt=t1)
+        if self.value() == 'medium':
+            return queryset.filter(cooking_time__gte=t1, cooking_time__lt=t2)
+        if self.value() == 'slow':
+            return queryset.filter(cooking_time__gte=t2)
+
+
+class HasRelatedFilter(admin.SimpleListFilter):
+    related_name = None
+    LOOKUP_CHOICES = [('yes', 'Да'), ('no', 'Нет')]
+
+    def lookups(self, request, model_admin):
+        return self.LOOKUP_CHOICES
 
     def queryset(self, request, queryset):
         if self.value() == 'yes':
@@ -42,20 +82,19 @@ class HasFollowersFilter(HasRelatedFilter):
 
 
 class RecipesCountMixin:
+    list_display = ('recipes_count', )
+
     @admin.display(description='Рецептов')
     def recipes_count(self, item):
         return item.recipes.count()
 
 
-class UserRecipeMixin:
-    list_display = ('id', 'user', 'recipe')
-
-
 @admin.register(User)
-class FoodgramUserAdmin(UserAdmin):
+class FoodgramUserAdmin(RecipesCountMixin, UserAdmin):
     list_display = (
         'id', 'username', 'get_full_name', 'email',
-        'get_avatar', 'recipes_count', 'subscriptions_count', 'followers_count'
+        'get_avatar', 'subscriptions_count', 'followers_count',
+        *RecipesCountMixin.list_display,
     )
     list_filter = (
         'is_staff', HasRecipesFilter,
@@ -75,10 +114,6 @@ class FoodgramUserAdmin(UserAdmin):
         return (f'<img src="{user.avatar.url}" width="50" '
                 f'height="50" style="border-radius: 50%">')
 
-    @admin.display(description='Рецептов')
-    def recipes_count(self, user):
-        return user.recipes.count()
-
     @admin.display(description='Подписок')
     def subscriptions_count(self, user):
         return user.subscriptions.count()
@@ -97,14 +132,14 @@ class SubscriptionAdmin(admin.ModelAdmin):
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'name', 'author',
+        'id', 'name', 'cooking_time', 'author',
         'favorites_count', 'get_ingredients', 'get_tags', 'get_image'
     )
     search_fields = (
         'name', 'author__username',
         'tags__name', 'ingredients__name'
     )
-    list_filter = ('tags', )
+    list_filter = ('tags', 'author', CookingTimeFilter)
     list_select_related = ('author',)
 
     def get_queryset(self, request):
@@ -141,13 +176,15 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(RecipesCountMixin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'slug', 'recipes_count')
+    list_display = ('id', 'name', 'slug', *RecipesCountMixin.list_display)
     search_fields = ('name', 'slug')
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(RecipesCountMixin, admin.ModelAdmin):
-    list_display = ('id', 'name', 'measurement_unit', 'recipes_count')
+    list_display = (
+        'id', 'name', 'measurement_unit', *RecipesCountMixin.list_display
+    )
     search_fields = ('name', 'measurement_unit')
     list_filter = ('measurement_unit', HasRecipesFilter)
 
@@ -157,11 +194,6 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'recipe', 'ingredient', 'amount')
 
 
-@admin.register(Favorite)
-class FavoriteAdmin(UserRecipeMixin, admin.ModelAdmin):
-    pass
-
-
-@admin.register(ShoppingCart)
-class ShoppingCartAdmin(UserRecipeMixin, admin.ModelAdmin):
-    pass
+@admin.register(Favorite, ShoppingCart)
+class FavoriteAndShoppingCartAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'recipe')
