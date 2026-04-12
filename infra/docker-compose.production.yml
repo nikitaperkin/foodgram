@@ -30,8 +30,7 @@ services:
       - static:/backend_static
       - media:/app/media
     command: >
-      sh -c "while ! nc -z db 5432; do sleep 1; done &&
-             python manage.py migrate &&
+      sh -c "python manage.py migrate &&
              python manage.py collectstatic --no-input &&
              cp -r /app/collected_static/. /backend_static/static &&
              gunicorn foodgram_backend.wsgi --bind 0.0.0.0:8000"
