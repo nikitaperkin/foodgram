@@ -13,7 +13,7 @@ class BaseImportCommand(BaseCommand):
         try:
             with open(data_path, encoding='utf-8') as file:
                 created = self.model.objects.bulk_create(
-                    [self.model(**item) for item in json.load(file)],
+                    (self.model(**item) for item in json.load(file)),
                     ignore_conflicts=True
                 )
             self.stdout.write(
@@ -24,5 +24,5 @@ class BaseImportCommand(BaseCommand):
             )
         except Exception as e:
             self.stderr.write(
-                self.style.ERROR(f'{data_path.name}: ошибка — {e}')
+                self.style.ERROR(f'{data_path}: ошибка — {e}')
             )

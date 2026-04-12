@@ -1,4 +1,4 @@
-from django.http import FileResponse, Http404
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -136,7 +136,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeWriteSerializer
         return RecipeReadSerializer
 
-    def _add_or_remove_recipe(self, request, model, pk=None):
+    def _add_or_remove_recipe(self, request, model, collection, pk=None):
         user = request.user
         if request.method == 'DELETE':
             get_object_or_404(model, user=user, recipe_id=pk).delete()
@@ -146,7 +146,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         _, created = model.objects.get_or_create(user=user, recipe=recipe)
         if not created:
             raise serializers.ValidationError(
-                f'Рецепт «{recipe.name}» уже добавлен'
+                f'Рецепт «{recipe.name}» уже добавлен в {collection}'
             )
         return Response(
             RecipeShortSerializer(
@@ -164,6 +164,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self._add_or_remove_recipe(
             request=request,
             model=Favorite,
+            collection='избранное',
             pk=pk
         )
 
@@ -176,6 +177,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self._add_or_remove_recipe(
             request=request,
             model=ShoppingCart,
+            collection='список покупок',
             pk=pk
         )
 
@@ -186,7 +188,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_link(self, request, pk=None):
         if not Recipe.objects.filter(pk=pk).exists():
-            raise Http404(f'Рецепт id={pk} не найден')
+            raise serializers.ValidationError(f'Рецепт id={pk} не найден')
         return Response(
             {'short-link': request.build_absolute_uri(
                 reverse('recipe-short-link', args=[pk])

@@ -2,47 +2,51 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import mark_safe
 
-from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                     ShoppingCart, Subscription, Tag, User)
+from .models import (Favorite, Ingredient, MIN_COOKING_TIME, Recipe,
+                     RecipeIngredient, ShoppingCart, Subscription, Tag, User)
 
 
 class CookingTimeFilter(admin.SimpleListFilter):
     title = 'Время готовки'
     parameter_name = 'cooking_time'
 
-    def _get_thresholds(self):
+    def lookups(self, request, model_admin):
         times = sorted(
             Recipe.objects.values_list('cooking_time', flat=True)
         )
-        if not times:
-            return 30, 60
+        if len(set(times)) < 3:
+            return []
         n = len(times)
-        return times[n // 3], times[2 * n // 3]
+        t1, t2 = times[n // 3], times[2 * n // 3]
 
-    def lookups(self, request, model_admin):
-        t1, t2 = self._get_thresholds()
-        queryset = model_admin.get_queryset(request)
-        fast_count = queryset.filter(cooking_time__lt=t1).count()
-        medium_count = queryset.filter(
-            cooking_time__gte=t1, cooking_time__lt=t2
+        recipes = model_admin.get_queryset(request)
+        self._ranges = {
+            'fast': (MIN_COOKING_TIME, t1 - 1),
+            'medium': (t1, t2 - 1),
+            'slow': (t2, 10**10)
+        }
+        fast_count = recipes.filter(
+            cooking_time__range=self._ranges["fast"]
         ).count()
-        slow = queryset.filter(
-            cooking_time__gte=t2
+
+        medium_count = recipes.filter(
+            cooking_time__range=self._ranges["medium"]
+        ).count()
+
+        slow_count = recipes.filter(
+            cooking_time__range=self._ranges["slow"]
         ).count()
         return [
             ('fast', f'быстрее {t1} мин ({fast_count})'),
             ('medium', f'быстрее {t2} мин ({medium_count})'),
-            ('slow', f'долго ({slow})'),
+            ('slow', f'долго ({slow_count})')
         ]
 
     def queryset(self, request, queryset):
-        t1, t2 = self._get_thresholds()
-        if self.value() == 'fast':
-            return queryset.filter(cooking_time__lt=t1)
-        if self.value() == 'medium':
-            return queryset.filter(cooking_time__gte=t1, cooking_time__lt=t2)
-        if self.value() == 'slow':
-            return queryset.filter(cooking_time__gte=t2)
+        time_range = self._ranges.get(self.value())
+        if time_range:
+            return queryset.filter(cooking_time__range=time_range)
+        return queryset
 
 
 class HasRelatedFilter(admin.SimpleListFilter):
