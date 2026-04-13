@@ -5,20 +5,24 @@ from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import (
+    IsAuthenticated, IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
-
 
 from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAuthorOrReadOnly
-from .serializers import (AvatarSerializer, IngredientSerializer,
-                          RecipeReadSerializer, RecipeShortSerializer,
-                          RecipeWriteSerializer, UserWithRecipesSerializer,
-                          TagSerializer)
+from .serializers import (
+    AvatarSerializer, IngredientSerializer,
+    RecipeReadSerializer, RecipeShortSerializer,
+    RecipeWriteSerializer, UserWithRecipesSerializer,
+    TagSerializer,
+)
 from .services import build_shopping_cart
-from recipes.models import (Favorite, Ingredient, Recipe,
-                            ShoppingCart, Subscription, Tag, User)
+from recipes.models import (
+    Favorite, Ingredient, Recipe,
+    ShoppingCart, Subscription, Tag, User,
+)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -136,7 +140,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeWriteSerializer
         return RecipeReadSerializer
 
-    def _add_or_remove_recipe(self, request, model, collection, pk=None):
+    def _add_or_remove_recipe(self, request, model, pk=None):
         user = request.user
         if request.method == 'DELETE':
             get_object_or_404(model, user=user, recipe_id=pk).delete()
@@ -146,7 +150,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         _, created = model.objects.get_or_create(user=user, recipe=recipe)
         if not created:
             raise serializers.ValidationError(
-                f'Рецепт «{recipe.name}» уже добавлен в {collection}'
+                f'Рецепт «{recipe.name}» '
+                f'уже добавлен в {model._meta.verbose_name}'
             )
         return Response(
             RecipeShortSerializer(
@@ -164,7 +169,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self._add_or_remove_recipe(
             request=request,
             model=Favorite,
-            collection='избранное',
             pk=pk
         )
 
@@ -177,7 +181,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self._add_or_remove_recipe(
             request=request,
             model=ShoppingCart,
-            collection='список покупок',
             pk=pk
         )
 

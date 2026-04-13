@@ -2,8 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import mark_safe
 
-from .models import (Favorite, Ingredient, MIN_COOKING_TIME, Recipe,
-                     RecipeIngredient, ShoppingCart, Subscription, Tag, User)
+from .models import (
+    Favorite, Ingredient, Recipe,
+    RecipeIngredient, ShoppingCart, Subscription, Tag, User,
+)
 
 
 class CookingTimeFilter(admin.SimpleListFilter):
@@ -11,9 +13,11 @@ class CookingTimeFilter(admin.SimpleListFilter):
     parameter_name = 'cooking_time'
 
     def lookups(self, request, model_admin):
-        times = sorted(
-            Recipe.objects.values_list('cooking_time', flat=True)
-        )
+        times = [
+            Recipe.objects.order_by(
+                'cooking_time'
+            ).values_list('cooking_time', flat=True)
+        ]
         if len(set(times)) < 3:
             return []
         n = len(times)
@@ -21,9 +25,9 @@ class CookingTimeFilter(admin.SimpleListFilter):
 
         recipes = model_admin.get_queryset(request)
         self._ranges = {
-            'fast': (MIN_COOKING_TIME, t1 - 1),
+            'fast': (times[0], t1 - 1),
             'medium': (t1, t2 - 1),
-            'slow': (t2, 10**10)
+            'slow': (t2, times[-1])
         }
         fast_count = recipes.filter(
             cooking_time__range=self._ranges["fast"]
@@ -42,11 +46,11 @@ class CookingTimeFilter(admin.SimpleListFilter):
             ('slow', f'долго ({slow_count})')
         ]
 
-    def queryset(self, request, queryset):
+    def queryset(self, request, recipes):
         time_range = self._ranges.get(self.value())
         if time_range:
-            return queryset.filter(cooking_time__range=time_range)
-        return queryset
+            return recipes.filter(cooking_time__range=time_range)
+        return recipes
 
 
 class HasRelatedFilter(admin.SimpleListFilter):
