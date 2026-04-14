@@ -142,4 +142,4 @@ dmypy.json
 static/
 media/
 infra/docker-compose.yml
-collected_static/
+backend/collected_static/

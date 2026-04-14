@@ -111,6 +111,9 @@ class Ingredient(models.Model):
             )
         ]
 
+    def __str__(self):
+        return self.name
+
 
 class Tag(models.Model):
     name = models.CharField(
@@ -124,6 +127,9 @@ class Tag(models.Model):
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
         ordering = ('name',)
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe(models.Model):
@@ -159,6 +165,9 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
         ordering = ('-pub_date',)
         default_related_name = 'recipes'
+
+    def __str__(self):
+        return self.name
 
 
 class RecipeIngredient(models.Model):

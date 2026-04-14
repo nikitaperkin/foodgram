@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group
+from django.forms.widgets import ClearableFileInput
 from django.utils.html import mark_safe
 
 from .models import (
@@ -8,27 +10,30 @@ from .models import (
 )
 
 
+admin.site.unregister(Group)
+
+
 class CookingTimeFilter(admin.SimpleListFilter):
     title = 'Время готовки'
     parameter_name = 'cooking_time'
 
     def lookups(self, request, model_admin):
-        times = [
+        times = list(
             Recipe.objects.order_by(
                 'cooking_time'
             ).values_list('cooking_time', flat=True)
-        ]
+        )
         if len(set(times)) < 3:
             return []
         n = len(times)
         t1, t2 = times[n // 3], times[2 * n // 3]
 
-        recipes = model_admin.get_queryset(request)
         self._ranges = {
             'fast': (times[0], t1 - 1),
             'medium': (t1, t2 - 1),
             'slow': (t2, times[-1])
         }
+        recipes = model_admin.get_queryset(request)
         fast_count = recipes.filter(
             cooking_time__range=self._ranges["fast"]
         ).count()
@@ -47,7 +52,7 @@ class CookingTimeFilter(admin.SimpleListFilter):
         ]
 
     def queryset(self, request, recipes):
-        time_range = self._ranges.get(self.value())
+        time_range = getattr(self, '_ranges', {}).get(self.value())
         if time_range:
             return recipes.filter(cooking_time__range=time_range)
         return recipes
@@ -97,6 +102,19 @@ class RecipesCountMixin:
         return item.recipes.count()
 
 
+class ImageWithPreviewWidget(ClearableFileInput):
+    def render(self, name, value, attrs=None, renderer=None):
+        output = ''
+        if value and hasattr(value, 'url'):
+            output = (f'<img src="{value.url}" width="80" height="80" '
+                      f'style="object-fit:cover;margin-right:10px;">')
+        return mark_safe(
+            f'<div style="display:flex;align-items:center;">'
+            f'{output}{super().render(name, value, attrs, renderer)}'
+            f'</div>'
+        )
+
+
 @admin.register(User)
 class FoodgramUserAdmin(RecipesCountMixin, UserAdmin):
     list_display = (
@@ -113,6 +131,11 @@ class FoodgramUserAdmin(RecipesCountMixin, UserAdmin):
         ('Дополнительно', {'fields': ('avatar',)}),
     )
     ordering = ('username',)
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'avatar':
+            kwargs['widget'] = ImageWithPreviewWidget
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     @admin.display(description='Аватар')
     @mark_safe
@@ -137,23 +160,39 @@ class SubscriptionAdmin(admin.ModelAdmin):
     ordering = ('user',)
 
 
+class RecipeIngredientInline(admin.TabularInline):
+    model = RecipeIngredient
+    extra = 1
+    min_num = 1
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'name', 'cooking_time', 'author',
+        'id', 'name', 'cooking_time_min', 'author',
         'favorites_count', 'get_ingredients', 'get_tags', 'get_image'
     )
     search_fields = (
         'name', 'author__username',
         'tags__name', 'ingredients__name'
     )
-    list_filter = ('tags', 'author', CookingTimeFilter)
+    list_filter = ('tags', 'author', CookingTimeFilter,)
     list_select_related = ('author',)
+    inlines = (RecipeIngredientInline,)
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related(
             'tags', 'recipe_ingredients__ingredient'
         )
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == 'image':
+            kwargs['widget'] = ImageWithPreviewWidget
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+    @admin.display(description=mark_safe('Время<br>(мин)'))
+    def cooking_time_min(self, recipe):
+        return recipe.cooking_time
 
     @admin.display(description='В избранном')
     def favorites_count(self, recipe):
