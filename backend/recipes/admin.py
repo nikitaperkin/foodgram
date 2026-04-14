@@ -9,7 +9,6 @@ from .models import (
     RecipeIngredient, ShoppingCart, Subscription, Tag, User,
 )
 
-
 admin.site.unregister(Group)
 
 
