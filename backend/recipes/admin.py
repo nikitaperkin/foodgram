@@ -106,9 +106,9 @@ class ImageWithPreviewWidget(ClearableFileInput):
         output = ''
         if value and hasattr(value, 'url'):
             output = (f'<img src="{value.url}" width="80" height="80" '
-                      f'style="object-fit: cover; margin-right: 10px;">')
+                      f'style="object-fit: cover; margin-right: 10px">')
         return mark_safe(
-            f'<div style="display: flex; align-items: center;">'
+            f'<div style="display: flex; align-items: center">'
             f'{output}{super().render(name, value, attrs, renderer)}'
             f'</div>'
         )
