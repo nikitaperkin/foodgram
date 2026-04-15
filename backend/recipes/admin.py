@@ -17,11 +17,10 @@ class CookingTimeFilter(admin.SimpleListFilter):
     parameter_name = 'cooking_time'
 
     def lookups(self, request, model_admin):
-        times = [
-            Recipe.objects.order_by(
-                'cooking_time'
-            ).values_list('cooking_time', flat=True)
-        ]
+        times = Recipe.objects.order_by(
+            'cooking_time'
+        ).values_list('cooking_time', flat=True)
+
         if len(set(times)) < 3:
             return []
         n = len(times)
@@ -30,7 +29,7 @@ class CookingTimeFilter(admin.SimpleListFilter):
         self._ranges = {
             'fast': (times[0], t1 - 1),
             'medium': (t1, t2 - 1),
-            'slow': (t2, times[-1])
+            'slow': (t2, times[n - 1])
         }
         recipes = model_admin.get_queryset(request)
         fast_count = recipes.filter(
