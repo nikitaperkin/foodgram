@@ -163,6 +163,14 @@ class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     extra = 1
     min_num = 1
+    fields = ('ingredient', 'amount', 'measurement_unit')
+    readonly_fields = ('measurement_unit', )
+
+    @admin.display(description='Ед. изм.')
+    def measurement_unit(self, recipe_ingredient):
+        if recipe_ingredient.ingredient_id:
+            return recipe_ingredient.ingredient.measurement_unit
+        return ''
 
 
 @admin.register(Recipe)
